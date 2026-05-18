@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dan-policy.schema.json",
+  "title": "Dan Policy v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "clients",
+    "projects",
+    "actors",
+    "protectedActions",
+    "rules"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": "dan.policy.v0" },
+    "clients": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/client" }
+    },
+    "projects": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/project" }
+    },
+    "actors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/actor" }
+    },
+    "protectedActions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "policyProfile", "secretsProfile"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "policyProfile": { "type": "string", "minLength": 1 },
+        "secretsProfile": { "type": "string", "minLength": 1 }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "clientId", "name", "repo"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "clientId": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "repo": { "type": "string", "minLength": 1 }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "roles"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "enum": ["human", "local_llm", "cloud_llm", "sdk_tool"]
+        },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "effect"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "effect": {
+          "enum": ["ok", "denied", "needs_approval", "ghost", "error"]
+        },
+        "reason": { "type": "string" },
+        "actorKinds": {
+          "type": "array",
+          "items": { "enum": ["human", "local_llm", "cloud_llm", "sdk_tool"] }
+        },
+        "actions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "classify",
+              "propose",
+              "summarize",
+              "execute",
+              "approve_gate",
+              "mutate_repo",
+              "mutate_provider",
+              "access_secrets",
+              "close_receipt"
+            ]
+          }
+        },
+        "requiredEvidence": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "command",
+              "stdout",
+              "stderr",
+              "exit_code",
+              "diff",
+              "test_result",
+              "screenshot",
+              "receipt"
+            ]
+          }
+        },
+        "unless": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasEvidence": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

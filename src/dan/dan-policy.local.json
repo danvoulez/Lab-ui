@@ -1,0 +1,97 @@
+{
+  "$schema": "./dan-policy.schema.json",
+  "version": "dan.policy.v0",
+  "clients": [
+    {
+      "id": "client_dan_local",
+      "name": "Dan Local",
+      "policyProfile": "default_local",
+      "secretsProfile": "doppler_local"
+    }
+  ],
+  "projects": [
+    {
+      "id": "project_control_plane",
+      "clientId": "client_dan_local",
+      "name": "Dan Control Plane",
+      "repo": "local"
+    }
+  ],
+  "actors": [
+    {
+      "id": "actor_dan",
+      "kind": "human",
+      "roles": ["owner", "approver", "receipt_closer"]
+    },
+    {
+      "id": "actor_local_llm",
+      "kind": "local_llm",
+      "roles": ["classifier", "proposer"]
+    },
+    {
+      "id": "actor_vercel_sandbox",
+      "kind": "sdk_tool",
+      "roles": ["executor"]
+    }
+  ],
+  "protectedActions": [
+    "shell.install_dependency",
+    "shell.risky_command",
+    "repo.mutate",
+    "provider.mutate",
+    "receipt.close"
+  ],
+  "rules": [
+    {
+      "id": "rule_local_llm_no_execution",
+      "effect": "denied",
+      "actorKinds": ["local_llm"],
+      "capabilities": [
+        "execute",
+        "approve_gate",
+        "mutate_repo",
+        "mutate_provider",
+        "access_secrets",
+        "close_receipt"
+      ],
+      "reason": "Local LLM may propose only."
+    },
+    {
+      "id": "rule_dependency_install_requires_gate",
+      "effect": "needs_approval",
+      "actions": ["shell.install_dependency"],
+      "requiredEvidence": ["command", "stdout", "stderr", "exit_code"],
+      "reason": "Dependency installs change the execution surface."
+    },
+    {
+      "id": "rule_risky_command_requires_gate",
+      "effect": "needs_approval",
+      "actions": ["shell.risky_command"],
+      "requiredEvidence": ["command", "stdout", "stderr", "exit_code"],
+      "reason": "Risky commands require Dan approval."
+    },
+    {
+      "id": "rule_repo_mutation_requires_gate",
+      "effect": "needs_approval",
+      "actions": ["repo.mutate"],
+      "requiredEvidence": ["diff"],
+      "reason": "Repository mutation requires scoped approval."
+    },
+    {
+      "id": "rule_provider_mutation_requires_gate",
+      "effect": "needs_approval",
+      "actions": ["provider.mutate"],
+      "requiredEvidence": ["receipt"],
+      "reason": "Provider mutation requires scoped approval."
+    },
+    {
+      "id": "rule_receipt_close_requires_evidence",
+      "effect": "ghost",
+      "actions": ["receipt.close"],
+      "unless": {
+        "hasEvidence": true
+      },
+      "reason": "Receipt closure without evidence is ghost."
+    }
+  ]
+}
